@@ -10,14 +10,12 @@ from skimage.io import imread
 from skimage.filters import threshold_otsu
 import sys
 import pytesseract
-
-# filename = sys.argv
-# print(sys.argv)
+import cv2
+from PIL import Image
 
 plate_like_objects = []
 
 for filename in sys.argv[1:]:
-    # print(filename)
 
     import cv2
     cap = cv2.VideoCapture(filename)
@@ -39,27 +37,13 @@ for filename in sys.argv[1:]:
     # car image -> grayscale image -> binary image
     import imutils
     car_image = imread("./output/frame%d.jpg"%(count-1), as_gray=True)
-    # car_image = imutils.rotate(car_image, 270)
-    # car_image = imread("car.png", as_gray=True)
-    # it should be a 2 dimensional array
     print(car_image.shape)
-
-    # the next line is not compulsory however, a grey scale pixel
-    # in skimage ranges between 0 & 1. multiplying it with 255
-    # will make it range between 0 & 255 (something we can relate better with
 
     gray_car_image = car_image * 255
     # fig, (ax1, ax2) = plt.subplots(1, 2)
     # ax1.imshow(gray_car_image, cmap="gray")
     threshold_value = threshold_otsu(gray_car_image)
     binary_car_image = gray_car_image > threshold_value
-    # print(binary_car_image)
-    # ax2.imshow(binary_car_image, cmap="gray")
-    # ax2.imshow(gray_car_image, cmap="gray")
-    # plt.show()
-
-    # CCA (finding connected regions) of binary image
-
 
     from skimage import measure
     from skimage.measure import regionprops
@@ -79,44 +63,7 @@ for filename in sys.argv[1:]:
     plate_objects_cordinates = []
     # plate_like_objects = []
 
-    # fig, (ax1) = plt.subplots(1)
-    # ax1.imshow(gray_car_image, cmap="gray")
     flag =0
-    # regionprops creates a list of properties of all the labelled regions
-    # for region in regionprops(label_image):
-    #     # print(region)
-    #     if region.area < 50:
-    #         #if the region is so small then it's likely not a license plate
-    #         continue
-    #         # the bounding box coordinates
-    #     min_row, min_col, max_row, max_col = region.bbox
-    #     # print(min_row)
-    #     # print(min_col)
-    #     # print(max_row)
-    #     # print(max_col)
-
-    #     region_height = max_row - min_row
-    #     region_width = max_col - min_col
-    #     # print(region_height)
-    #     # print(region_width)
-
-    #     # ensuring that the region identified satisfies the condition of a typical license plate
-    #     if region_height >= min_height and region_height <= max_height and region_width >= min_width and region_width <= max_width and region_width > region_height:
-    #         flag = 1
-    #         plate_like_objects.append(binary_car_image[min_row:max_row,
-    #                                 min_col:max_col])
-    #         plate_objects_cordinates.append((min_row, min_col,
-    #                                         max_row, max_col))
-    #         rectBorder = patches.Rectangle((min_col, min_row), max_col - min_col, max_row - min_row, edgecolor="red",
-    #                                     linewidth=2, fill=False)
-    #         ax1.add_patch(rectBorder)
-    #         # let's draw a red rectangle over those regions
-    # if(flag == 1):
-    #     # print(plate_like_objects[0])
-    #     plt.show()
-
-
-
 
     if(flag==0):
         min_height, max_height, min_width, max_width = plate_dimensions2
@@ -133,19 +80,13 @@ for filename in sys.argv[1:]:
                 continue
                 # the bounding box coordinates
             min_row, min_col, max_row, max_col = region.bbox
-            # print(min_row)
-            # print(min_col)
-            # print(max_row)
-            # print(max_col)
 
             region_height = max_row - min_row
             region_width = max_col - min_col
-            # print(region_height)
-            # print(region_width)
 
             # ensuring that the region identified satisfies the condition of a typical license plate
             if region_height >= min_height and region_height <= max_height and region_width >= min_width and region_width <= max_width and region_width > region_height:
-                # print("hello")
+
                 plate_like_objects.append(binary_car_image[min_row:max_row,
                                           min_col:max_col])
                 plate_objects_cordinates.append((min_row, min_col,
@@ -162,9 +103,6 @@ for filename in sys.argv[1:]:
                 # let's draw a red rectangle over those regions
         # print(plate_like_objects[0])
         plt.show()
-        # print(min_row)
-        
-        # print(Cropped)
         # plt.imshow(Cropped,cmap='gray')
 
         # Read the number plate
@@ -172,9 +110,6 @@ for filename in sys.argv[1:]:
         # print("Detected Number is:",text)
 
         plt.show()
-        # cv2.waitKey(0)
-
-# print(plate_like_objects)
 
 
 
@@ -191,16 +126,16 @@ labelled_plate = measure.label(license_plate)
 
 fig, ax1 = plt.subplots(1)
 ax1.imshow(license_plate, cmap="gray")
-# the next two lines is based on the assumptions that the width of
-# a license plate should be between 5% and 15% of the license plate,
-# and height should be between 35% and 60%
-# this will eliminate some
+
 character_dimensions = (0.5*license_plate.shape[0], 1.0*license_plate.shape[0], 0.00*license_plate.shape[1], 0.4*license_plate.shape[1])
 min_height, max_height, min_width, max_width = character_dimensions
 
 characters = []
 counter=0
 column_list = []
+
+rois = []
+
 for regions in regionprops(labelled_plate):
     y0, x0, y1, x1 = regions.bbox
     region_height = y1 - y0
@@ -213,6 +148,9 @@ for regions in regionprops(labelled_plate):
         rect_border = patches.Rectangle((x0, y0), x1 - x0, y1 - y0, edgecolor="red",
                                        linewidth=2, fill=False)
         ax1.add_patch(rect_border)
+        # plt.imshow(roi)
+        # plt.show()
+        rois.append(roi)
 
         # resize the characters to 20X20 and then append each character into the characters list
         resized_char = resize(roi, (20, 20))
@@ -222,3 +160,67 @@ for regions in regionprops(labelled_plate):
         column_list.append(x0)
 # print(characters)
 plt.show()
+
+for roi in rois:
+    plt.imshow(roi)
+    print(1*(roi==1))
+    # roi = 1*(roi==1)
+    plt.show()
+    print(pytesseract.image_to_string(Image.fromarray(roi)))
+    ## Add your code here
+
+
+################# Add code to detect each character (37 = 26+10+1 classes) in the for loop above #######################
+
+## You have been provided with the base code above
+## and just need to add code to detect each character
+
+## To test your code, visualise the image of each character "carefully" and check if your output is matching with your visual observation :)
+## It's really easy. I must admit, it's really very easy.
+## Ok if INVALID class not added initially, but huge penalty will be added later
+
+## (OPTIONAL) Read the code above and modify the parameters so that it segments correctly
+
+################################ DO NOT EDIT THE CODE BELOW, IT's JUST COMMENTED :) ####################################
+
+
+# import SegmentCharacters
+# import pickle
+# print("Loading model...")
+# filename = './finalized_model.sav'
+# model = pickle.load(open(filename, 'rb'))
+
+# print('Model loaded. Predicting characters of number plate')
+# classification_result = []
+# for each_character in characters:
+#     # converts it to a 1D array
+#     plt.imshow(each_character.reshape,cmap='gray')
+#     plt.show()
+#     print(pytesseract.image_to_string(Image.fromarray(1-each_character)))
+#     each_character = each_character.reshape(1, -1);
+#     result = model.predict(each_character)
+#     classification_result.append(result)
+
+# print('Classification result')
+# print(classification_result)
+
+# plate_string = ''
+# for eachPredict in classification_result:
+#     plate_string += eachPredict[0]
+#     # print(eachPredict[0])
+
+# print('Predicted license plate')
+# print(plate_string)
+
+# it's possible the characters are wrongly arranged
+# since that's a possibility, the column_list will be
+# used to sort the letters in the right order
+
+# column_list_copy = column_list[:]
+# column_list.sort()
+# rightplate_string = ''
+# for each in column_list:
+#     rightplate_string += plate_string[column_list_copy.index(each)]
+
+# print('License plate')
+# print(rightplate_string)
