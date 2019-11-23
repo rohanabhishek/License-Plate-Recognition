@@ -30,7 +30,7 @@ count = 0
 while cap.isOpened():
     ret,frame = cap.read()
     if ret == True:
-        cv2.imshow('window-name',frame)
+        # cv2.imshow('window-name',frame)
         cv2.imwrite("./output/frame%d.jpg" % count, frame)
         count = count + 1
         if cv2.waitKey(10) & 0xFF == ord('q'):
@@ -73,7 +73,7 @@ if(flag==0):
     # plate_like_objects = []
 
     fig, (ax1) = plt.subplots(1)
-    ax1.imshow(gray_car_image, cmap="gray")
+    # ax1.imshow(gray_car_image, cmap="gray")
 
     # regionprops creates a list of properties of all the labelled regions
     for region in regionprops(label_image):
@@ -104,14 +104,14 @@ if(flag==0):
             # break
             # let's draw a red rectangle over those regions
     # print(plate_like_objects[0])
-    plt.show()
+    # plt.show()
     # plt.imshow(Cropped,cmap='gray')
 
     # Read the number plate
     # text = pytesseract.image_to_string(Cropped, config='--psm 11')
     # print("Detected Number is:",text)
 
-    plt.show()
+    # plt.show()
 
 
 
@@ -128,7 +128,7 @@ labelled_plate = measure.label(license_plate)
 
 fig, ax1 = plt.subplots(1)
 license_plate = rgb2gray(license_plate)
-ax1.imshow(license_plate, cmap="gray")
+# ax1.imshow(license_plate, cmap="gray")
 
 character_dimensions = (0.5*license_plate.shape[0], 1.0*license_plate.shape[0], 0.00*license_plate.shape[1], 0.4*license_plate.shape[1])
 min_height, max_height, min_width, max_width = character_dimensions
@@ -158,92 +158,20 @@ for regions in regionprops(labelled_plate):
 
         # resize the characters to 20X20 and then append each character into the characters list
         resized_char = resize(roi, (20, 20))
-        plt.imshow(resized_char,cmap='gray')
-        plt.show()
+        for x in range(20):
+
+            for y in range(20):
+                if(resized_char[x][y]>=0.5):
+                    print("X"),
+                else:
+                    print(" "),
+            print("\n")
+        face = raw_input("Specify Character: ")
         characters.append(resized_char)
 
         # this is just to keep track of the arrangement of the characters
         column_list.append(x0)
 # print(characters)
-plt.show()
-
-for roi in rois:
-    roi = np.pad(roi,20,mode='constant')
-    print(roi.shape)
-    roi1 = np.zeros((roi.shape[0],roi.shape[1]*10))
-    for i in range(9):
-        roi1[:,i*roi.shape[1]:(i+1)*roi.shape[1]] = roi
-    roi = roi1
-    print(roi.shape)
-    roi = np.pad(roi,100,mode='constant')
-    # roi = roi[::2,::2]
-    # roi = 1*(roi==1)
-    # print(roi)
-    # roi = cv2.bilateralFilter(np.array(roi,dtype='f'),2,1,1)
-    roi = np.array(255-roi*255,dtype='f')
-    # roi = np.array(1*(roi>50),dtype='f')
-    
-    # print(1*(roi==1))
-    # roi = 1*(roi==1)
-    # print(roi)
-    text = pytesseract.image_to_string(Image.fromarray(roi), config="ALPHAnumeric")
-    print(text)
-
-    plt.imshow(roi,cmap='gray')
-    plt.show()
+# plt.show()
 
 
-################# Add code to detect each character (37 = 26+10+1 classes) in the for loop above #######################
-
-## You have been provided with the base code above
-## and just need to add code to detect each character
-
-## To test your code, visualise the image of each character "carefully" and check if your output is matching with your visual observation :)
-## It's really easy. I must admit, it's really very easy.
-## Ok if INVALID class not added initially, but huge penalty will be added later
-
-## (OPTIONAL) Read the code above and modify the parameters so that it segments correctly
-
-################################ DO NOT EDIT THE CODE BELOW, IT's JUST COMMENTED :) ####################################
-
-
-# import SegmentCharacters
-# import pickle
-# print("Loading model...")
-# filename = './finalized_model.sav'
-# model = pickle.load(open(filename, 'rb'))
-
-# print('Model loaded. Predicting characters of number plate')
-# classification_result = []
-# for each_character in characters:
-#     # converts it to a 1D array
-#     plt.imshow(each_character.reshape,cmap='gray')
-#     plt.show()
-#     print(pytesseract.image_to_string(Image.fromarray(1-each_character)))
-#     each_character = each_character.reshape(1, -1);
-#     result = model.predict(each_character)
-#     classification_result.append(result)
-
-# print('Classification result')
-# print(classification_result)
-
-# plate_string = ''
-# for eachPredict in classification_result:
-#     plate_string += eachPredict[0]
-#     # print(eachPredict[0])
-
-# print('Predicted license plate')
-# print(plate_string)
-
-# it's possible the characters are wrongly arranged
-# since that's a possibility, the column_list will be
-# used to sort the letters in the right order
-
-# column_list_copy = column_list[:]
-# column_list.sort()
-# rightplate_string = ''
-# for each in column_list:
-#     rightplate_string += plate_string[column_list_copy.index(each)]
-
-# print('License plate')
-# print(rightplate_string)
