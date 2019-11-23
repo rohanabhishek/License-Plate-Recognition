@@ -13,6 +13,7 @@ import pytesseract
 import cv2
 from PIL import Image
 
+from tasks import *
 
 from skimage import measure
 from skimage.measure import regionprops
@@ -115,6 +116,25 @@ if(flag==0):
 
 
 
+modelName = 'my_model.npy'
+# print(XTrain.shape)
+# print(YTrain.shape)
+nn1 = nn.NeuralNetwork(36, 0.001, 200, 10)
+nn1.addLayer(FullyConnectedLayer(400, 50, "relu"))
+nn1.addLayer(FullyConnectedLayer(50, 36, "softmax"))
+# nn1.train(XTrain, YTrain, XVal, YVal, True, True, loadModel=True, saveModel=False, modelName=modelName)
+
+# if loadModel:
+model = np.load(modelName,allow_pickle=True)
+k,i = 0,0
+for l in nn1.layers:
+    if type(l).__name__ != "AvgPoolingLayer" and type(l).__name__ != "FlattenLayer": 
+        nn1.layers[i].weights = model[k]
+        nn1.layers[i].biases = model[k+1]
+        k+=2
+    i+=1
+print("Model Loaded... ")
+
 
 
 
@@ -122,128 +142,168 @@ if(flag==0):
 # print(DetectPlate.plate_like_objects)
 
 # The invert was done so as to convert the black pixel to white pixel and vice versa
-license_plate = np.invert(plate_like_objects[0])
+for lp in plate_like_objects:
+    license_plate = np.invert(lp)
 
-labelled_plate = measure.label(license_plate)
+    labelled_plate = measure.label(license_plate)
 
-fig, ax1 = plt.subplots(1)
-license_plate = rgb2gray(license_plate)
-ax1.imshow(license_plate, cmap="gray")
+    fig, ax1 = plt.subplots(1)
+    license_plate = rgb2gray(license_plate)
+    ax1.imshow(license_plate, cmap="gray")
 
-character_dimensions = (0.5*license_plate.shape[0], 1.0*license_plate.shape[0], 0.00*license_plate.shape[1], 0.4*license_plate.shape[1])
-min_height, max_height, min_width, max_width = character_dimensions
+    character_dimensions = (0.5*license_plate.shape[0], 1.0*license_plate.shape[0], 0.00*license_plate.shape[1], 0.4*license_plate.shape[1])
+    min_height, max_height, min_width, max_width = character_dimensions
 
-characters = []
-counter=0
-column_list = []
+    characters = []
+    counter=0
+    column_list = []
 
-rois = []
+    rois = []
 
-for regions in regionprops(labelled_plate):
+    print("Licence plate number-------")
 
-    y0, x0, y1, x1 = regions.bbox
-    region_height = y1 - y0
-    region_width = x1 - x0
+    for regions in regionprops(labelled_plate):
 
-    if region_height > min_height and region_height < max_height and region_width > min_width and region_width < max_width:
-        roi = license_plate[y0:y1, x0:x1]
+        y0, x0, y1, x1 = regions.bbox
+        region_height = y1 - y0
+        region_width = x1 - x0
 
-        # draw a red bordered rectangle over the character.
-        rect_border = patches.Rectangle((x0, y0), x1 - x0, y1 - y0, edgecolor="red",
-                                       linewidth=2, fill=False)
-        ax1.add_patch(rect_border)
-        # plt.imshow(roi)
-        # plt.show()
-        rois.append(roi)
+        if region_height > min_height and region_height < max_height and region_width > min_width and region_width < max_width:
+            roi = license_plate[y0:y1, x0:x1]
 
-        # resize the characters to 20X20 and then append each character into the characters list
-        resized_char = resize(roi, (20, 20))
-        plt.imshow(resized_char,cmap='gray')
-        plt.show()
-        characters.append(resized_char)
+            # draw a red bordered rectangle over the character.
+            rect_border = patches.Rectangle((x0, y0), x1 - x0, y1 - y0, edgecolor="red",
+                                        linewidth=2, fill=False)
+            ax1.add_patch(rect_border)
+            # plt.imshow(roi)
+            # plt.show()
+            rois.append(roi)
 
-        # this is just to keep track of the arrangement of the characters
-        column_list.append(x0)
-# print(characters)
-plt.show()
+            # resize the characters to 20X20 and then append each character into the characters list
+            resized_char = Image.fromarray(roi).resize((20, 20))
+            # print(roi.shape)
+            
+            characters.append(resized_char)
 
-for roi in rois:
-    roi = np.pad(roi,20,mode='constant')
-    print(roi.shape)
-    roi1 = np.zeros((roi.shape[0],roi.shape[1]*10))
-    for i in range(9):
-        roi1[:,i*roi.shape[1]:(i+1)*roi.shape[1]] = roi
-    roi = roi1
-    print(roi.shape)
-    roi = np.pad(roi,100,mode='constant')
-    # roi = roi[::2,::2]
-    # roi = 1*(roi==1)
-    # print(roi)
-    # roi = cv2.bilateralFilter(np.array(roi,dtype='f'),2,1,1)
-    roi = np.array(255-roi*255,dtype='f')
-    # roi = np.array(1*(roi>50),dtype='f')
-    
-    # print(1*(roi==1))
-    # roi = 1*(roi==1)
-    # print(roi)
-    text = pytesseract.image_to_string(Image.fromarray(roi), config="ALPHAnumeric")
-    print(text)
+            roi = np.array(resized_char)
+            # print(roi.shape)
+            # roi = 1.0*(roi==1)
+            # display(roi)
+            # x = roi
+            # x = 1*(x > 0.5)
+            # for i in range(20):
+            #     for j in range(20):
+            #         if x[i][j] == 1:print("X",end=" ")
+            #         else:print(" ",end=" ") 
+            #     print("\n")
+            roi = roi.reshape((1,400))
+            # print(roi)
+            # roi.reshape((1,400))
 
-    plt.imshow(roi,cmap='gray')
+            valActivations  = nn1.feedforward(roi)
+            pred = np.argmax(valActivations[-1], axis=1)
+            # print(pred)
+            if(valActivations[-1][0][pred]<0.5):
+                print("No character")
+                continue
+            # validPred = oneHotEncodeY(pred, nn1.out_nodes)
+            # print(validPred)
+            # validPred = validPred[0]
+            # for i in range(36):
+            # if(validPred[i]==1):
+            # print(valActivations[-1][pred[0]])
+            if(pred<10):
+                print(pred[0])
+            else:
+                print(chr(65+pred-10))
+            # break
+            # print(x)
+            plt.imshow(resized_char,cmap='gray')
+            plt.show()
+
+
+            # this is just to keep track of the arrangement of the characters
+            column_list.append(x0)
+    # print(characters)
     plt.show()
 
+    # for roi in characters:
+    #     roi = np.pad(roi,20,mode='constant')
+    #     print(roi.shape)
+    #     roi1 = np.zeros((roi.shape[0],roi.shape[1]*10))
+    #     for i in range(9):
+    #         roi1[:,i*roi.shape[1]:(i+1)*roi.shape[1]] = roi
+    #     roi = roi1
+    #     print(roi.shape)
+    #     roi = np.pad(roi,100,mode='constant')
+    #     # roi = roi[::2,::2]
+    #     # roi = 1*(roi==1)
+    #     # print(roi)
+    #     # roi = cv2.bilateralFilter(np.array(roi,dtype='f'),2,1,1)
+    #     roi = np.array(255-roi*255,dtype='f')
+    #     # roi = np.array(1*(roi>50),dtype='f')
+        
+    #     # print(1*(roi==1))
+    #     # roi = 1*(roi==1)
+    #     # print(roi)
+    #     text = pytesseract.image_to_string(Image.fromarray(roi), config="ALPHAnumeric")
+    #     print(text)
 
-################# Add code to detect each character (37 = 26+10+1 classes) in the for loop above #######################
-
-## You have been provided with the base code above
-## and just need to add code to detect each character
-
-## To test your code, visualise the image of each character "carefully" and check if your output is matching with your visual observation :)
-## It's really easy. I must admit, it's really very easy.
-## Ok if INVALID class not added initially, but huge penalty will be added later
-
-## (OPTIONAL) Read the code above and modify the parameters so that it segments correctly
-
-################################ DO NOT EDIT THE CODE BELOW, IT's JUST COMMENTED :) ####################################
+    #     plt.imshow(roi,cmap='gray')
+    #     plt.show()
 
 
-# import SegmentCharacters
-# import pickle
-# print("Loading model...")
-# filename = './finalized_model.sav'
-# model = pickle.load(open(filename, 'rb'))
+    ################# Add code to detect each character (37 = 26+10+1 classes) in the for loop above #######################
 
-# print('Model loaded. Predicting characters of number plate')
-# classification_result = []
-# for each_character in characters:
-#     # converts it to a 1D array
-#     plt.imshow(each_character.reshape,cmap='gray')
-#     plt.show()
-#     print(pytesseract.image_to_string(Image.fromarray(1-each_character)))
-#     each_character = each_character.reshape(1, -1);
-#     result = model.predict(each_character)
-#     classification_result.append(result)
+    ## You have been provided with the base code above
+    ## and just need to add code to detect each character
 
-# print('Classification result')
-# print(classification_result)
+    ## To test your code, visualise the image of each character "carefully" and check if your output is matching with your visual observation :)
+    ## It's really easy. I must admit, it's really very easy.
+    ## Ok if INVALID class not added initially, but huge penalty will be added later
 
-# plate_string = ''
-# for eachPredict in classification_result:
-#     plate_string += eachPredict[0]
-#     # print(eachPredict[0])
+    ## (OPTIONAL) Read the code above and modify the parameters so that it segments correctly
 
-# print('Predicted license plate')
-# print(plate_string)
+    ################################ DO NOT EDIT THE CODE BELOW, IT's JUST COMMENTED :) ####################################
 
-# it's possible the characters are wrongly arranged
-# since that's a possibility, the column_list will be
-# used to sort the letters in the right order
 
-# column_list_copy = column_list[:]
-# column_list.sort()
-# rightplate_string = ''
-# for each in column_list:
-#     rightplate_string += plate_string[column_list_copy.index(each)]
+    # import SegmentCharacters
+    # import pickle
+    # print("Loading model...")
+    # filename = './finalized_model.sav'
+    # model = pickle.load(open(filename, 'rb'))
 
-# print('License plate')
-# print(rightplate_string)
+    # print('Model loaded. Predicting characters of number plate')
+    # classification_result = []
+    # for each_character in characters:
+    #     # converts it to a 1D array
+    #     plt.imshow(each_character.reshape,cmap='gray')
+    #     plt.show()
+    #     print(pytesseract.image_to_string(Image.fromarray(1-each_character)))
+    #     each_character = each_character.reshape(1, -1);
+    #     result = model.predict(each_character)
+    #     classification_result.append(result)
+
+    # print('Classification result')
+    # print(classification_result)
+
+    # plate_string = ''
+    # for eachPredict in classification_result:
+    #     plate_string += eachPredict[0]
+    #     # print(eachPredict[0])
+
+    # print('Predicted license plate')
+    # print(plate_string)
+
+    # it's possible the characters are wrongly arranged
+    # since that's a possibility, the column_list will be
+    # used to sort the letters in the right order
+
+    # column_list_copy = column_list[:]
+    # column_list.sort()
+    # rightplate_string = ''
+    # for each in column_list:
+    #     rightplate_string += plate_string[column_list_copy.index(each)]
+
+    # print('License plate')
+    # print(rightplate_string)
