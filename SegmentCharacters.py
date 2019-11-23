@@ -109,7 +109,7 @@ for filename in sys.argv[1:]:
         # text = pytesseract.image_to_string(Cropped, config='--psm 11')
         # print("Detected Number is:",text)
 
-        plt.show()
+        # plt.show()
 
 
 
@@ -162,12 +162,27 @@ for regions in regionprops(labelled_plate):
 plt.show()
 
 for roi in rois:
-    plt.imshow(roi)
-    print(1*(roi==1))
+    # plt.imshow(roi)
+    # print(1*(roi==1))
     # roi = 1*(roi==1)
-    plt.show()
-    print(pytesseract.image_to_string(Image.fromarray(roi)))
+    # plt.show()
+    # print(pytesseract.image_to_string(Image.fromarray(roi)))
     ## Add your code here
+    # ocr_result = pytesseract.image_to_string(roi, lang='eng', boxes=False, \
+    #        config='--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789')
+    # text = pytesseract.image_to_string(Image.fromarray(roi), config='digits')
+    # roi = 1*(roi == 1)
+    roi = np.array(255*roi, dtype = 'f')
+    # gray = cv2.meanBlur(np.array(roi, dtype = 'f'), 3)
+    # plt.imshow(gray)
+    # plt.show()
+    # print(roi)
+    # config = ("-l eng --oem 1 --psm 7")
+    plt.imshow(roi)
+    plt.show()
+    config="-c tessedit" "_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" " --psm 10" " -l osd" " "
+    text = pytesseract.image_to_string(Image.fromarray(roi), config=config)
+    print(text)
 
 
 ################# Add code to detect each character (37 = 26+10+1 classes) in the for loop above #######################
