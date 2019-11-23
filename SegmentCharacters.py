@@ -93,7 +93,6 @@ print("Model Loaded... ")
 list_of_plates = []
 list_of_columns = []
 for lp in plate_like_objects:
-    # license_plate = np.pad(np.invert(lp), 2, mode='constant')
     license_plate = np.invert(lp)
 
     labelled_plate = measure.label(license_plate)
@@ -102,13 +101,11 @@ for lp in plate_like_objects:
     license_plate = rgb2gray(license_plate)
     ax1.imshow(license_plate, cmap="gray")
 
-    character_dimensions = (0.3*license_plate.shape[0], 1.0*license_plate.shape[0], 0.01*license_plate.shape[1], 0.6*license_plate.shape[1])
+    character_dimensions = (0.3*license_plate.shape[0], 1.0*license_plate.shape[0], 0.02*license_plate.shape[1], 0.6*license_plate.shape[1])
     min_height, max_height, min_width, max_width = character_dimensions
 
     characters = []
     column_list = []
-
-    rois = []
 
     for regions in regionprops(labelled_plate):
 
@@ -123,7 +120,6 @@ for lp in plate_like_objects:
             rect_border = patches.Rectangle((x0, y0), x1 - x0, y1 - y0, edgecolor="red",
                                         linewidth=2, fill=False)
             ax1.add_patch(rect_border)
-            rois.append(roi)
 
             # resize the characters to 20X20 and then append each character into the characters list
             resized_char = Image.fromarray(roi).resize((20, 20))

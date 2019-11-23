@@ -59,7 +59,7 @@ for region in regionprops(label_image):
     # ensuring that the region identified satisfies the condition of a typical license plate
     if region_height >= min_height and region_height <= max_height and region_width >= min_width and region_width <= max_width and region_width > region_height:
 
-        plate_like_objects.append(binary_car_image[min_row:max_row,
+        plate_like_objects.append(gray_car_image[min_row:max_row,
                                     min_col:max_col])
         plate_objects_cordinates.append((min_row, min_col,
                                             max_row, max_col))
@@ -93,8 +93,11 @@ print("Model Loaded... ")
 list_of_plates = []
 list_of_columns = []
 for lp in plate_like_objects:
+    # print(lp)
     # license_plate = np.pad(np.invert(lp), 2, mode='constant')
-    license_plate = np.invert(lp)
+    license_plate = (255-lp)
+    threshold_value = threshold_otsu(license_plate)
+    license_plate = license_plate > threshold_value
 
     labelled_plate = measure.label(license_plate)
 
