@@ -22,7 +22,7 @@ import matplotlib.patches as patches
 
 filenames = sys.argv[1:]
 
-index = 0
+index = 1260
 
 for filename in filenames:
     plate_like_objects = []
@@ -198,3 +198,4 @@ for filename in filenames:
                     with open("trained/data.txt", "a") as num_file_handler:
                         num_file_handler.write(face + "\n")
                     num_file_handler.close()
+print("Please change index to: "+str(index+1))
