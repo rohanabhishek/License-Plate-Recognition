@@ -163,12 +163,12 @@ for regions in regionprops(labelled_plate):
 plt.show()
 
 for roi in rois:
-    roi = np.pad(roi,10)
+    roi = np.pad(roi,20,mode='constant')
     roi1 = np.zeros((roi.shape[0],roi.shape[1]*10))
     for i in range(9):
         roi1[:,i*roi.shape[1]:(i+1)*roi.shape[1]] = roi
     roi = roi1
-    roi = np.pad(roi,100)
+    roi = np.pad(roi,100,mode='constant')
     # roi = roi[::2,::2]
     # roi = 1*(roi==1)
     # print(roi)
