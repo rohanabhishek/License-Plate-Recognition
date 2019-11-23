@@ -13,6 +13,12 @@ import pytesseract
 import cv2
 from PIL import Image
 
+
+from skimage import measure
+from skimage.measure import regionprops
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
 plate_like_objects = []
 
 filename = sys.argv[1]
@@ -45,10 +51,6 @@ gray_car_image = car_image * 255
 threshold_value = threshold_otsu(gray_car_image)
 binary_car_image = gray_car_image > threshold_value
 
-from skimage import measure
-from skimage.measure import regionprops
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 # this gets all the connected regions and groups them together
 label_image = measure.label(binary_car_image)
@@ -164,10 +166,12 @@ plt.show()
 
 for roi in rois:
     roi = np.pad(roi,20,mode='constant')
+    print(roi.shape)
     roi1 = np.zeros((roi.shape[0],roi.shape[1]*10))
     for i in range(9):
         roi1[:,i*roi.shape[1]:(i+1)*roi.shape[1]] = roi
     roi = roi1
+    print(roi.shape)
     roi = np.pad(roi,100,mode='constant')
     # roi = roi[::2,::2]
     # roi = 1*(roi==1)
@@ -179,7 +183,7 @@ for roi in rois:
     # print(1*(roi==1))
     # roi = 1*(roi==1)
     # print(roi)
-    text = pytesseract.image_to_string(Image.fromarray(roi), config="--psm 11")
+    text = pytesseract.image_to_string(Image.fromarray(roi), config="ALPHAnumeric")
     print(text)
 
     plt.imshow(roi,cmap='gray')
