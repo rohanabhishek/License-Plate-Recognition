@@ -1,5 +1,7 @@
 # License Plate Recognition
-The project is completed in Autumn 2019. The goal of this project is to detect the License Plate and recognise the License Plate Numbers(LPNs).
+This project is completed under Prof. Ganesh Ramakrishnan in the course "Artificial Intelligence and Machine Learning"(CS337) at IITB in Autmun 2019.
+
+The goal of this project is to detect the License Plate and recognise the License Plate Numbers(LPNs).
 
 Please refer to the report present in `docs/` directory for more information.
 
@@ -18,3 +20,6 @@ Dependencies: python3 libraries - `scikit, cv2, skimage`
 1. https://platerecognizer.com/number-plate-datasets/
 2. https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8270118
 3. https://github.com/apoorva-dave/LicensePlateDetector
+
+## License
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
